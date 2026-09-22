@@ -1,0 +1,28 @@
+# Maven and Java build output
+backend/target/
+**/target/
+*.class
+*.jar
+*.war
+
+# Node, Next.js, and Expo local output
+node_modules/
+.next/
+.expo/
+
+# Android build output
+android/.gradle/
+android/app/build/
+
+# Local environment configuration
+.env
+.env.*
+
+# IDE settings
+.idea/
+*.iml
+.vscode/
+
+# Operating system artifacts
+.DS_Store
+Thumbs.db
