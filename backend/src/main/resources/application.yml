@@ -1,6 +1,15 @@
 spring:
   application:
     name: guftagu-backend
+  datasource:
+    url: ${GUFTAGU_DATABASE_URL}
+    username: ${GUFTAGU_DATABASE_USERNAME}
+    password: ${GUFTAGU_DATABASE_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
 
 server:
   shutdown: graceful
