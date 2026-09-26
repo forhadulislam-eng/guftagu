@@ -17,6 +17,7 @@ android/app/build/
 # Local environment configuration
 .env
 .env.*
+!.env.example
 
 # IDE settings
 .idea/

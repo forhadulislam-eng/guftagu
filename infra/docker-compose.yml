@@ -1,0 +1,23 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: guftagu-postgres-dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${GUFTAGU_POSTGRES_DB:-guftagu_dev}
+      POSTGRES_USER: ${GUFTAGU_POSTGRES_USER:-guftagu_user}
+      POSTGRES_PASSWORD: ${GUFTAGU_POSTGRES_PASSWORD:-guftagu_dev_password}
+    ports:
+      - "${GUFTAGU_POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - guftagu_dev_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${GUFTAGU_POSTGRES_USER:-guftagu_user} -d ${GUFTAGU_POSTGRES_DB:-guftagu_dev}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+volumes:
+  guftagu_dev_pgdata:
+    name: guftagu_dev_pgdata

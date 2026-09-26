@@ -2,9 +2,9 @@ spring:
   application:
     name: guftagu-backend
   datasource:
-    url: ${GUFTAGU_DATABASE_URL}
-    username: ${GUFTAGU_DATABASE_USERNAME}
-    password: ${GUFTAGU_DATABASE_PASSWORD}
+    url: ${GUFTAGU_DATABASE_URL:jdbc:postgresql://localhost:5432/guftagu_dev}
+    username: ${GUFTAGU_DATABASE_USERNAME:guftagu_user}
+    password: ${GUFTAGU_DATABASE_PASSWORD:guftagu_dev_password}
   jpa:
     hibernate:
       ddl-auto: validate
