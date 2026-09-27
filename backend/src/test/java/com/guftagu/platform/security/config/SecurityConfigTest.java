@@ -18,6 +18,12 @@ class SecurityConfigTest {
     @Autowired
     private MockMvc mockMvc;
 
+    @org.springframework.boot.test.mock.mockito.MockBean
+    private com.guftagu.platform.security.jwt.JwtService jwtService;
+
+    @org.springframework.boot.test.mock.mockito.MockBean
+    private com.guftagu.platform.security.config.JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+
     @Test
     void permitsGetStatusEndpointWithoutAuthentication() throws Exception {
         mockMvc.perform(get("/api/v1/status"))

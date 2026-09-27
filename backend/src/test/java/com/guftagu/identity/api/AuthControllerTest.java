@@ -41,6 +41,12 @@ class AuthControllerTest {
     @MockBean
     private com.guftagu.identity.application.SessionRevocationService sessionRevocationService;
 
+    @MockBean
+    private com.guftagu.platform.security.jwt.JwtService jwtService;
+
+    @MockBean
+    private com.guftagu.platform.security.config.JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+
     @Test
     void webLogin_returnsAccessTokenAndSetsCookie_andOmitsRefreshTokenFromJson() throws Exception {
         LoginRequest request = new LoginRequest("+14155552671", "password123", ClientType.WEB);

@@ -42,6 +42,12 @@ class GlobalExceptionHandlerTest {
     @MockBean
     private SessionRevocationService sessionRevocationService;
 
+    @MockBean
+    private com.guftagu.platform.security.jwt.JwtService jwtService;
+
+    @MockBean
+    private com.guftagu.platform.security.config.JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+
     @Test
     void invalidCredentials_returns401AndGenericMessage() throws Exception {
         LoginRequest request = new LoginRequest("+14155552671", "wrongpassword", ClientType.WEB);
