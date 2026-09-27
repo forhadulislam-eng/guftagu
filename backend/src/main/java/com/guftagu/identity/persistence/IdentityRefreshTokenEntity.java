@@ -60,4 +60,27 @@ public class IdentityRefreshTokenEntity {
         this.issuedAt = OffsetDateTime.now(ZoneOffset.UTC);
         this.expiresAt = Objects.requireNonNull(expiresAt, "expiresAt must not be null");
     }
+
+    public void consume(OffsetDateTime now) {
+        Objects.requireNonNull(now, "now must not be null");
+        if (this.revokedAt != null) {
+            throw new IllegalStateException("Token is revoked and cannot be consumed");
+        }
+        if (this.consumedAt != null) {
+            throw new IllegalStateException("Token is already consumed");
+        }
+        if (!now.isBefore(this.expiresAt)) {
+            throw new IllegalStateException("Token is expired and cannot be consumed");
+        }
+        this.consumedAt = now;
+    }
+
+    public void revoke(String reason) {
+        Objects.requireNonNull(reason, "reason must not be null");
+        if (this.revokedAt != null) {
+            throw new IllegalStateException("Token is already revoked");
+        }
+        this.revokedAt = OffsetDateTime.now(ZoneOffset.UTC);
+        this.revocationReason = reason;
+    }
 }

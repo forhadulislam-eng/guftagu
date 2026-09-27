@@ -80,4 +80,18 @@ public class IdentitySessionEntity {
         this.lastUsedAt = createdAt;
         this.expiresAt = Objects.requireNonNull(expiresAt, "expiresAt must not be null");
     }
+
+    public void revoke(String reason) {
+        Objects.requireNonNull(reason, "reason must not be null");
+        if (this.revokedAt != null) {
+            throw new IllegalStateException("Session is already revoked");
+        }
+        this.revokedAt = OffsetDateTime.now(ZoneOffset.UTC);
+        this.revocationReason = reason;
+    }
+
+    public void touch(OffsetDateTime now) {
+        Objects.requireNonNull(now, "now must not be null");
+        this.lastUsedAt = now;
+    }
 }
