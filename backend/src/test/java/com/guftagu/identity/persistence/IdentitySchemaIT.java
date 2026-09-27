@@ -35,7 +35,7 @@ class IdentitySchemaIT {
                 .dataSource(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword())
                 .locations("classpath:db/migration")
                 .load();
-        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(6);
+        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(7);
         dataSource = flyway.getConfiguration().getDataSource();
     }
 
@@ -47,6 +47,7 @@ class IdentitySchemaIT {
         assertThat(tableExists("identity_sessions")).isTrue();
         assertThat(tableExists("identity_refresh_token_families")).isTrue();
         assertThat(tableExists("identity_refresh_tokens")).isTrue();
+        assertThat(tableExists("identity_otp_challenges")).isTrue();
 
         try (Connection connection = dataSource.getConnection();
              Statement statement = connection.createStatement();
@@ -55,7 +56,7 @@ class IdentitySchemaIT {
             while (result.next()) {
                 assertThat(result.getString(1)).isEqualTo(Integer.toString(expectedVersion++));
             }
-            assertThat(expectedVersion).isEqualTo(7);
+            assertThat(expectedVersion).isEqualTo(8);
         }
     }
 
