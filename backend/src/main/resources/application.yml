@@ -13,3 +13,10 @@ spring:
 
 server:
   shutdown: graceful
+
+guftagu:
+  security:
+    jwt:
+      secret: ${GUFTAGU_JWT_SECRET:guftagu-development-secret-key-must-be-at-least-256-bits-long-for-hmac-sha}
+      issuer: guftagu
+      access-token-ttl: 10m
