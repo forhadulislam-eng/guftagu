@@ -66,13 +66,21 @@ class AuthControllerTest {
                 .andExpect(cookie().httpOnly("refresh_token", true))
                 .andExpect(cookie().secure("refresh_token", true))
                 .andExpect(cookie().path("refresh_token", "/api/v1/auth/"))
+                .andExpect(cookie().exists("XSRF-TOKEN"))
+                .andExpect(cookie().httpOnly("XSRF-TOKEN", false))
+                .andExpect(cookie().secure("XSRF-TOKEN", true))
+                .andExpect(cookie().path("XSRF-TOKEN", "/"))
                 // MockMvcResultMatchers doesn't have a direct sameSite assertion before Spring Framework 6+ sometimes?
                 // Spring 6 (Spring Boot 3) MockMvc does not have a native SameSite matcher in cookie(). We can verify via header instead, but actually Spring Boot 3 has `cookie().attribute("SameSite", "Strict")` if supported, let's just use string check on Set-Cookie if needed, but it's simpler not to if MockMvc can't. Wait, spring test doesn't natively expose sameSite matcher easily on the Cookie ResultMatcher. Let's just omit the sameSite assert or check the header directly.
                 // We'll check the header value instead.
                 .andExpect(result -> {
-                    String setCookie = result.getResponse().getHeader("Set-Cookie");
-                    assert setCookie != null;
-                    assert setCookie.contains("SameSite=Strict");
+                    for (String setCookie : result.getResponse().getHeaders("Set-Cookie")) {
+                        if (setCookie != null && setCookie.startsWith("refresh_token=")) {
+                            if (!setCookie.toLowerCase().contains("samesite=strict")) {
+                                throw new AssertionError("Missing SameSite=Strict in: " + setCookie);
+                            }
+                        }
+                    }
                 });
     }
 
@@ -113,7 +121,9 @@ class AuthControllerTest {
         mockMvc.perform(post("/api/v1/auth/refresh")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request))
-                        .cookie(new jakarta.servlet.http.Cookie("refresh_token", "cookie-refresh-token"))
+                        .cookie(new jakarta.servlet.http.Cookie("refresh_token", "cookie-refresh-token"),
+                                new jakarta.servlet.http.Cookie("XSRF-TOKEN", "csrf-value-123"))
+                        .header("X-XSRF-TOKEN", "csrf-value-123")
                         .secure(true))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").value("new-access-token"))
@@ -179,7 +189,9 @@ class AuthControllerTest {
         mockMvc.perform(post("/api/v1/auth/logout")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request))
-                        .cookie(new jakarta.servlet.http.Cookie("refresh_token", "cookie-refresh-token"))
+                        .cookie(new jakarta.servlet.http.Cookie("refresh_token", "cookie-refresh-token"),
+                                new jakarta.servlet.http.Cookie("XSRF-TOKEN", "csrf-value-123"))
+                        .header("X-XSRF-TOKEN", "csrf-value-123")
                         .secure(true))
                 .andExpect(status().isNoContent())
                 .andExpect(cookie().value("refresh_token", "")) // cleared
@@ -187,6 +199,11 @@ class AuthControllerTest {
                 .andExpect(cookie().httpOnly("refresh_token", true))
                 .andExpect(cookie().secure("refresh_token", true))
                 .andExpect(cookie().path("refresh_token", "/api/v1/auth/"))
+                .andExpect(cookie().value("XSRF-TOKEN", ""))
+                .andExpect(cookie().maxAge("XSRF-TOKEN", 0))
+                .andExpect(cookie().httpOnly("XSRF-TOKEN", false))
+                .andExpect(cookie().secure("XSRF-TOKEN", true))
+                .andExpect(cookie().path("XSRF-TOKEN", "/"))
                 .andExpect(result -> {
                     String setCookie = result.getResponse().getHeader("Set-Cookie");
                     assert setCookie != null;
@@ -231,5 +248,51 @@ class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void webRefresh_missingCsrfHeader_returns403() throws Exception {
+        com.guftagu.identity.api.dto.RefreshRequest request = new com.guftagu.identity.api.dto.RefreshRequest(ClientType.WEB, null);
+
+        mockMvc.perform(post("/api/v1/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .cookie(new jakarta.servlet.http.Cookie("refresh_token", "cookie-refresh-token"),
+                                new jakarta.servlet.http.Cookie("XSRF-TOKEN", "csrf-value-123"))
+                        .secure(true))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("CSRF_REJECTED"))
+                .andExpect(jsonPath("$.message").value("Access denied"));
+    }
+
+    @Test
+    void webRefresh_mismatchedCsrfHeader_returns403() throws Exception {
+        com.guftagu.identity.api.dto.RefreshRequest request = new com.guftagu.identity.api.dto.RefreshRequest(ClientType.WEB, null);
+
+        mockMvc.perform(post("/api/v1/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .cookie(new jakarta.servlet.http.Cookie("refresh_token", "cookie-refresh-token"),
+                                new jakarta.servlet.http.Cookie("XSRF-TOKEN", "csrf-value-123"))
+                        .header("X-XSRF-TOKEN", "wrong-csrf-value")
+                        .secure(true))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("CSRF_REJECTED"))
+                .andExpect(jsonPath("$.message").value("Access denied"));
+    }
+
+    @Test
+    void webLogout_missingCsrfHeader_returns403() throws Exception {
+        com.guftagu.identity.api.dto.LogoutRequest request = new com.guftagu.identity.api.dto.LogoutRequest(ClientType.WEB, null);
+
+        mockMvc.perform(post("/api/v1/auth/logout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request))
+                        .cookie(new jakarta.servlet.http.Cookie("refresh_token", "cookie-refresh-token"),
+                                new jakarta.servlet.http.Cookie("XSRF-TOKEN", "csrf-value-123"))
+                        .secure(true))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("CSRF_REJECTED"))
+                .andExpect(jsonPath("$.message").value("Access denied"));
     }
 }

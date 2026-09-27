@@ -14,6 +14,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -55,6 +56,11 @@ public class AuthController {
                     .path("/api/v1/auth/")
                     .sameSite("Strict")
                     .build();
+
+            CsrfToken csrfToken = (CsrfToken) httpRequest.getAttribute(CsrfToken.class.getName());
+            if (csrfToken != null) {
+                csrfToken.getToken();
+            }
 
             return ResponseEntity.ok()
                     .header(HttpHeaders.SET_COOKIE, cookie.toString())
@@ -109,7 +115,7 @@ public class AuthController {
         sessionRevocationService.revokeSession(rawToken);
 
         if (request.clientType() == ClientType.WEB) {
-            ResponseCookie cookie = ResponseCookie.from("refresh_token", "")
+            ResponseCookie refreshCookie = ResponseCookie.from("refresh_token", "")
                     .maxAge(0)
                     .httpOnly(true)
                     .secure(httpRequest.isSecure())
@@ -117,8 +123,17 @@ public class AuthController {
                     .sameSite("Strict")
                     .build();
 
+            ResponseCookie csrfCookie = ResponseCookie.from("XSRF-TOKEN", "")
+                    .maxAge(0)
+                    .httpOnly(false)
+                    .secure(httpRequest.isSecure())
+                    .path("/")
+                    .sameSite("Strict")
+                    .build();
+
             return ResponseEntity.noContent()
-                    .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                    .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
+                    .header(HttpHeaders.SET_COOKIE, csrfCookie.toString())
                     .build();
         }
 
