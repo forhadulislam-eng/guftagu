@@ -41,4 +41,11 @@ public class IdentityPasswordCredentialEntity {
         this.createdAt = OffsetDateTime.now(ZoneOffset.UTC);
         this.updatedAt = createdAt;
     }
+
+    public boolean verifyPassword(org.springframework.security.crypto.password.PasswordEncoder encoder, String rawPassword) {
+        if (rawPassword == null) {
+            return false;
+        }
+        return encoder.matches(rawPassword, this.passwordHash);
+    }
 }

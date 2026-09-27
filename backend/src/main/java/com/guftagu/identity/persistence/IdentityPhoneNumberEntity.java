@@ -57,4 +57,16 @@ public class IdentityPhoneNumberEntity {
         this.createdAt = OffsetDateTime.now(ZoneOffset.UTC);
         this.updatedAt = createdAt;
     }
+
+    public UUID userId() {
+        return user.id();
+    }
+
+    public boolean primary() {
+        return primary;
+    }
+
+    public IdentityUserEntity user() {
+        return user;
+    }
 }

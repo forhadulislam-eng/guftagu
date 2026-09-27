@@ -48,17 +48,26 @@ public class IdentityRefreshTokenEntity {
     }
 
     public IdentityRefreshTokenEntity(
+            UUID id,
             IdentityRefreshTokenFamilyEntity family,
             IdentityRefreshTokenEntity parentToken,
             byte[] secretHash,
             OffsetDateTime expiresAt) {
-        this.id = UUID.randomUUID();
+        this.id = Objects.requireNonNull(id, "id must not be null");
         this.family = Objects.requireNonNull(family, "family must not be null");
         this.parentToken = parentToken;
         this.secretHash = Arrays.copyOf(
                 Objects.requireNonNull(secretHash, "secretHash must not be null"), secretHash.length);
         this.issuedAt = OffsetDateTime.now(ZoneOffset.UTC);
         this.expiresAt = Objects.requireNonNull(expiresAt, "expiresAt must not be null");
+    }
+
+    public IdentityRefreshTokenEntity(
+            IdentityRefreshTokenFamilyEntity family,
+            IdentityRefreshTokenEntity parentToken,
+            byte[] secretHash,
+            OffsetDateTime expiresAt) {
+        this(UUID.randomUUID(), family, parentToken, secretHash, expiresAt);
     }
 
     public void consume(OffsetDateTime now) {
@@ -82,5 +91,29 @@ public class IdentityRefreshTokenEntity {
         }
         this.revokedAt = OffsetDateTime.now(ZoneOffset.UTC);
         this.revocationReason = reason;
+    }
+
+    public UUID id() {
+        return id;
+    }
+
+    public IdentityRefreshTokenFamilyEntity family() {
+        return family;
+    }
+
+    public byte[] secretHash() {
+        return secretHash;
+    }
+
+    public boolean isConsumed() {
+        return consumedAt != null;
+    }
+
+    public OffsetDateTime expiresAt() {
+        return expiresAt;
+    }
+
+    public IdentityRefreshTokenEntity parentToken() {
+        return parentToken;
     }
 }

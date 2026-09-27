@@ -51,4 +51,16 @@ public class IdentityRefreshTokenFamilyEntity {
         this.revokedAt = OffsetDateTime.now(ZoneOffset.UTC);
         this.revocationReason = reason;
     }
+
+    public IdentitySessionEntity session() {
+        return session;
+    }
+
+    public boolean isRevoked() {
+        return revokedAt != null;
+    }
+
+    public UUID id() {
+        return id;
+    }
 }

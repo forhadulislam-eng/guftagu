@@ -156,6 +156,14 @@ existing session before a new login is allowed. Password change, phone-number
 change, and account deletion require separate approved flows before endpoints
 are designed.
 
+## Application services and transaction boundaries
+
+Identity behaviors are encapsulated in dedicated application services enforcing strict transactional boundaries:
+
+- **AuthenticationService**: Provides read-only credential verification. Enforces anti-enumeration by performing a dummy Argon2 hash computation when a phone number is not found. It does not initiate transactions but delegates to `SessionService` on success.
+- **SessionService**: Uses a standard `@Transactional` boundary. Session, refresh-token family, and root refresh token creation are committed atomically within that transaction. Argon2 password verification occurs in `AuthenticationService` before entering this write transaction. No independent `REQUIRES_NEW` propagation is used.
+- **TokenRotationService**: Manages the critical refresh token rotation flow. It locks the presented token pessimistically (`findByIdForUpdate`). To ensure replay detection is never rolled back by outer exceptions, the `@Transactional` boundary specifies `noRollbackFor = ReplayDetectedException.class`. This guarantees that if a consumed token is reused, the session and family revocations are durably committed, permanently disabling the compromised token family before the exception is propagated.
+
 ## Client token storage
 
 ### Web

@@ -94,4 +94,20 @@ public class IdentitySessionEntity {
         Objects.requireNonNull(now, "now must not be null");
         this.lastUsedAt = now;
     }
+
+    public UUID id() {
+        return id;
+    }
+
+    public UUID userId() {
+        return user.id();
+    }
+
+    public ClientType clientType() {
+        return clientType;
+    }
+
+    public boolean isRevoked() {
+        return revokedAt != null;
+    }
 }

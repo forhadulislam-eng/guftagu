@@ -38,7 +38,11 @@ public class IdentityUserEntity {
         this.updatedAt = createdAt;
     }
 
-    UUID id() {
+    public UUID id() {
         return id;
+    }
+
+    public AccountStatus accountStatus() {
+        return accountStatus;
     }
 }
