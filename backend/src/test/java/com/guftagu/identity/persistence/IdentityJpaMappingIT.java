@@ -6,6 +6,8 @@ import com.guftagu.identity.domain.AccountStatus;
 import com.guftagu.identity.domain.ClientType;
 import com.guftagu.identity.domain.NormalizedPhoneNumber;
 import com.guftagu.identity.domain.PhoneVerificationStatus;
+import com.guftagu.identity.domain.OtpChallengeStatus;
+import com.guftagu.identity.domain.OtpPurpose;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.PersistenceContext;
@@ -83,5 +85,67 @@ class IdentityJpaMappingIT {
         entityManager.persist(family);
         entityManager.persist(token);
         entityManager.flush();
+    }
+
+    @Test
+    @Transactional
+    void persistsAndRoundTripsOtpChallengeEntityLifecycle() {
+        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC).truncatedTo(java.time.temporal.ChronoUnit.MICROS);
+        OffsetDateTime expiresAt = now.plusMinutes(10);
+        NormalizedPhoneNumber phone = new NormalizedPhoneNumber("+14155552671");
+        IdentityOtpChallengeEntity challenge = new IdentityOtpChallengeEntity(
+                phone,
+                OtpPurpose.REGISTRATION,
+                "provider-ref-xyz-12345",
+                expiresAt);
+
+        entityManager.persist(challenge);
+        entityManager.flush();
+        entityManager.clear();
+
+        IdentityOtpChallengeEntity reloaded = entityManager.find(IdentityOtpChallengeEntity.class, challenge.id());
+        assertThat(reloaded).isNotNull();
+        assertThat(reloaded.id()).isEqualTo(challenge.id());
+        assertThat(reloaded.normalizedE164()).isEqualTo("+14155552671");
+        assertThat(reloaded.purpose()).isEqualTo(OtpPurpose.REGISTRATION);
+        assertThat(reloaded.providerReference()).isEqualTo("provider-ref-xyz-12345");
+        assertThat(reloaded.status()).isEqualTo(OtpChallengeStatus.PENDING);
+        assertThat(reloaded.isPending()).isTrue();
+        assertThat(reloaded.isVerified()).isFalse();
+        assertThat(reloaded.isConsumed()).isFalse();
+        assertThat(reloaded.createdAt()).isNotNull();
+        assertThat(reloaded.createdAt().toEpochSecond()).isEqualTo(challenge.createdAt().toEpochSecond());
+        assertThat(reloaded.expiresAt().toInstant()).isEqualTo(expiresAt.toInstant());
+        assertThat(reloaded.verifiedAt()).isNull();
+        assertThat(reloaded.consumedAt()).isNull();
+
+        OffsetDateTime verifiedAt = now.plusMinutes(1);
+        reloaded.markVerified(verifiedAt);
+        entityManager.flush();
+        entityManager.clear();
+
+        IdentityOtpChallengeEntity verifiedReloaded = entityManager.find(IdentityOtpChallengeEntity.class, challenge.id());
+        assertThat(verifiedReloaded).isNotNull();
+        assertThat(verifiedReloaded.status()).isEqualTo(OtpChallengeStatus.VERIFIED);
+        assertThat(verifiedReloaded.isPending()).isFalse();
+        assertThat(verifiedReloaded.isVerified()).isTrue();
+        assertThat(verifiedReloaded.isConsumed()).isFalse();
+        assertThat(verifiedReloaded.verifiedAt()).isNotNull();
+        assertThat(verifiedReloaded.verifiedAt().toInstant()).isEqualTo(verifiedAt.toInstant());
+        assertThat(verifiedReloaded.consumedAt()).isNull();
+
+        OffsetDateTime consumedAt = now.plusMinutes(2);
+        verifiedReloaded.markConsumed(consumedAt);
+        entityManager.flush();
+        entityManager.clear();
+
+        IdentityOtpChallengeEntity consumedReloaded = entityManager.find(IdentityOtpChallengeEntity.class, challenge.id());
+        assertThat(consumedReloaded).isNotNull();
+        assertThat(consumedReloaded.status()).isEqualTo(OtpChallengeStatus.CONSUMED);
+        assertThat(consumedReloaded.isPending()).isFalse();
+        assertThat(consumedReloaded.isVerified()).isFalse();
+        assertThat(consumedReloaded.isConsumed()).isTrue();
+        assertThat(consumedReloaded.consumedAt()).isNotNull();
+        assertThat(consumedReloaded.consumedAt().toInstant()).isEqualTo(consumedAt.toInstant());
     }
 }
